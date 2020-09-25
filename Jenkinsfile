@@ -1,46 +1,28 @@
-#!groovy
-environment {
-     VERSION = "0.1"
-   }
-tools {nodejs "node"}
 node {
-    stage('Checkout') {
-        deleteDir()
-        checkout scm
-    }
-
-     stage('Check NPM version') {
-        withEnv(["NPM_CONFIG_LOGLEVEL=warn"]) {
-            sh 'npm config ls'
+    def newApp
+    def registry = 'brahim04/frontd-app'
+    def registryCredential = 'dockerhub'
+	
+	stage('Git') {
+		git 'https://github.com/ibra-04/my-appFront.git'
+	}
+	stage('Build') {
+		sh 'npm install'
+	}
+	stage('Building image') {
+        docker.withRegistry( 'https://' + registry, registryCredential ) {
+		    def buildName = registry + ":$BUILD_NUMBER"
+			newApp = docker.build buildName
+			newApp.push()
         }
-    }
-
-    stage('NPM Install') {
-        withEnv(["NPM_CONFIG_LOGLEVEL=warn"]) {
-            sh 'npm install'
+	}
+	stage('Registring image') {
+        docker.withRegistry( 'https://' + registry, registryCredential ) {
+    		newApp.push 'latest2'
         }
-    }
-
-   stage('Build') {
-        milestone()
-        sh 'npm run prod'
-    }
-
-    stage('Archive') {
-        sh 'tar -cvzf dist.tar.gz --strip-components=1 dist'
-        archive 'dist.tar.gz'
-    }
-
-  stage('Backup') {
-        milestone()
-        echo "Backup last version..."
-        echo '/var/www/html/jenkins-demo/$(date +%F_%H.%M.%S)/'
-        sh 'min=/var/www/html/jenkins-demo/$(date +%F_%H.%M.%S)/; mkdir $min; cp -arf /var/www/html/jenkins-demo/. $min'
-    }
- 
- stage('Deploy') {
-        milestone()
-        echo "Deploying..."
-        sh 'min=/var/www/html/jenkins-demo/;cp -arf dist/. $min; cp /var/www/html/robots.txt $min'
+	}
+    stage('Removing image') {
+        sh "docker rmi $registry:$BUILD_NUMBER"
+        sh "docker rmi $registry:latest"
     }
 }
