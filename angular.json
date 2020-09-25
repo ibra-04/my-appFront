@@ -118,6 +118,10 @@
           }
         }
       }
-    }},
-  "defaultProject": "jenkins-demo"
+    }
+  },
+  "defaultProject": "jenkins-demo",
+  "cli": {
+    "analytics": "bc0f29ff-0497-454d-b2b7-2c6388496de0"
+  }
 }
